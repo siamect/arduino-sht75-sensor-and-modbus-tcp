@@ -73,7 +73,7 @@ float SHT1x::readTemperatureF()
  */
 float SHT1x::readHumidity()
 {
-  int _val;                    // Raw humidity value returned from sensor
+  int _val,crc_from_sht;                    // Raw humidity value returned from sensor
   float _linearHumidity;       // Humidity with linear correction applied
   float _correctedHumidity;    // Temperature-corrected humidity
   float _temperature;          // Raw temperature value
@@ -92,7 +92,8 @@ float SHT1x::readHumidity()
   sendCommandSHT(_gHumidCmd, _dataPin, _clockPin);
   waitForResultSHT(_dataPin);
   _val = getData16SHT(_dataPin, _clockPin);
-  skipCrcSHT(_dataPin, _clockPin);
+  crc_from_sht = getDataCrcSHT(_dataPin, _clockPin);
+  endSHT(_dataPin, _clockPin);
 
   // Apply linear conversion to raw value
   _linearHumidity = C1 + C2 * _val + C3 * _val * _val;
@@ -114,7 +115,7 @@ float SHT1x::readHumidity()
  */
 float SHT1x::readTemperatureRaw()
 {
-  int _val;
+  int _val,crc_from_sht;
 
   // Command to send to the SHT1x to request Temperature
   int _gTempCmd  = 0b00000011;
@@ -122,7 +123,8 @@ float SHT1x::readTemperatureRaw()
   sendCommandSHT(_gTempCmd, _dataPin, _clockPin);
   waitForResultSHT(_dataPin);
   _val = getData16SHT(_dataPin, _clockPin);
-  skipCrcSHT(_dataPin, _clockPin);
+  crc_from_sht = getDataCrcSHT(_dataPin, _clockPin);
+  endSHT(_dataPin, _clockPin);
 
   return (_val);
 }
@@ -231,7 +233,30 @@ int SHT1x::getData16SHT(int _dataPin, int _clockPin)
 
 /**
  */
-void SHT1x::skipCrcSHT(int _dataPin, int _clockPin)
+int SHT1x::getDataCrcSHT(int _dataPin, int _clockPin)
+{
+  long val;
+  val=0;
+
+  // Send the required ack
+  pinMode(_dataPin, OUTPUT);
+  digitalWrite(_dataPin, HIGH);
+  digitalWrite(_dataPin, LOW);
+  digitalWrite(_clockPin, HIGH);
+  digitalWrite(_clockPin, LOW);
+
+  // Get the least significant bits
+  pinMode(_dataPin, INPUT);
+  digitalWrite(_dataPin, HIGH);
+  val =  shiftIn(_dataPin, _clockPin, 8);
+
+  return val;
+}
+
+
+/**
+ */
+void SHT1x::endSHT(int _dataPin, int _clockPin)
 {
   // Skip acknowledge to end trans (no CRC)
   pinMode(_dataPin, OUTPUT);
@@ -240,4 +265,6 @@ void SHT1x::skipCrcSHT(int _dataPin, int _clockPin)
   digitalWrite(_dataPin, HIGH);
   digitalWrite(_clockPin, HIGH);
   digitalWrite(_clockPin, LOW);
+  pinMode(_dataPin, INPUT);
+  digitalWrite(_dataPin, HIGH);
 }

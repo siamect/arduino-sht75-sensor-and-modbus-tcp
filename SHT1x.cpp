@@ -35,7 +35,7 @@ float SHT1x::readTemperatureC()
   float _temperature;      // Temperature derived from raw value
 
   // Conversion coefficients from SHT15 datasheet
-  const float D1 = -40.0;  // for 14 Bit @ 5V
+  const float D1 = -40.1;  // for 14 Bit @ 5V
   const float D2 =   0.01; // for 14 Bit DEGC
 
   // Fetch raw value
@@ -136,10 +136,11 @@ int SHT1x::shiftIn(int _dataPin, int _clockPin, int _numBits)
   int ret = 0;
   int i;
 
+  ret=0;
   for (i=0; i<_numBits; ++i)
   {
      digitalWrite(_clockPin, HIGH);
-     delay(10);  // I don't know why I need this, but without it I don't get my 8 lsb of temp
+     //delay(10);  // I don't know why I need this, but without it I don't get my 8 lsb of temp
      ret = ret*2 + digitalRead(_dataPin);
      digitalWrite(_clockPin, LOW);
   }
@@ -170,6 +171,7 @@ void SHT1x::sendCommandSHT(int _command, int _dataPin, int _clockPin)
   // Verify we get the correct ack
   digitalWrite(_clockPin, HIGH);
   pinMode(_dataPin, INPUT);
+  digitalWrite(_dataPin, HIGH); //pull-up enabled
   ack = digitalRead(_dataPin);
   if (ack != LOW) {
     //Serial.println("Ack Error 0");
@@ -189,10 +191,11 @@ void SHT1x::waitForResultSHT(int _dataPin)
   int ack;
 
   pinMode(_dataPin, INPUT);
-
-  for(i= 0; i < 100; ++i)
+  digitalWrite(_dataPin, HIGH); //pull-up enabled
+  //delay(10);
+  for(i= 0; i < 2; ++i)
   {
-    delay(10);
+    //delay(10);
     ack = digitalRead(_dataPin);
 
     if (ack == LOW) {
@@ -204,15 +207,27 @@ void SHT1x::waitForResultSHT(int _dataPin)
     //Serial.println("Ack Error 2"); // Can't do serial stuff here, need another way of reporting errors
   }
 }
+/**
+ */
+bool SHT1x::dontWaitForResultSHT(int _dataPin)
+{
+  int i;
+  int ack;
+
+  pinMode(_dataPin, INPUT);
+  digitalWrite(_dataPin, HIGH);
+  return (not digitalRead(_dataPin));
+}
 
 /**
  */
 int SHT1x::getData16SHT(int _dataPin, int _clockPin)
 {
-  int val;
-
+  long val;
+  val=0;
   // Get the most significant bits
   pinMode(_dataPin, INPUT);
+  digitalWrite(_dataPin, HIGH);
   pinMode(_clockPin, OUTPUT);
   val = shiftIn(_dataPin, _clockPin, 8);
   val *= 256;
@@ -226,7 +241,8 @@ int SHT1x::getData16SHT(int _dataPin, int _clockPin)
 
   // Get the least significant bits
   pinMode(_dataPin, INPUT);
-  val |= shiftIn(_dataPin, _clockPin, 8);
+  digitalWrite(_dataPin, HIGH);
+  val = val + shiftIn(_dataPin, _clockPin, 8);
 
   return val;
 }

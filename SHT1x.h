@@ -25,16 +25,18 @@ class SHT1x
     float readHumidity();
     float readTemperatureC();
     float readTemperatureF();
+    void waitForResultSHT(int _dataPin);
+    bool dontWaitForResultSHT(int _dataPin);
+    void endSHT(int _dataPin, int _clockPin);
+    float readTemperatureRaw();
+    int getData16SHT(int _dataPin, int _clockPin);
+    int getDataCrcSHT(int _dataPin, int _clockPin);
+    void sendCommandSHT(int _command, int _dataPin, int _clockPin);
   private:
     int _dataPin;
     int _clockPin;
     int _numBits;
-    float readTemperatureRaw();
     int shiftIn(int _dataPin, int _clockPin, int _numBits);
-    void sendCommandSHT(int _command, int _dataPin, int _clockPin);
-    void waitForResultSHT(int _dataPin);
-    int getData16SHT(int _dataPin, int _clockPin);
-    void skipCrcSHT(int _dataPin, int _clockPin);
 };
 
 #endif
